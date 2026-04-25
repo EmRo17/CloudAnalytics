@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sample Superstore Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f4f5f7;
+        color: #1a1a2e;
+        min-height: 100vh;
+      }
+
+      header {
+        background: #fff;
+        border-bottom: 1px solid #e2e4e9;
+        padding: 0.85rem 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      header h1 {
+        font-size: 17px;
+        font-weight: 700;
+      }
+      header p {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 2px;
+      }
+      .filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      select {
+        padding: 6px 11px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 13px;
+        background: #fff;
+        color: #374151;
+        cursor: pointer;
+        outline: none;
+      }
+      select:focus {
+        border-color: #378add;
+      }
+
+      /* TICKER */
+      .ticker-bar {
+        background: #0f172a;
+        padding: 0 2rem;
+        display: flex;
+        align-items: center;
+        height: 38px;
+        overflow: hidden;
+      }
+      .ticker-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: #94a3b8;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        white-space: nowrap;
+        margin-right: 16px;
+        flex-shrink: 0;
+      }
+      .ticker-scroll {
+        display: flex;
+        gap: 28px;
+        animation: scroll-t 30s linear infinite;
+        white-space: nowrap;
+      }
+      .ticker-scroll:hover {
+        animation-play-state: paused;
+      }
+      @keyframes scroll-t {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(-50%);
+        }
+      }
+      .tcoin {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 15px;
+        color: #e2e8f0;
+      }
+      .tcoin .tsym {
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .up {
+        color: #22c55e;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .down {
+        color: #ef4444;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .ticker-status {
+        font-size: 10px;
+        color: #64748b;
+        margin-left: auto;
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding-left: 16px;
+      }
+      .blink {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #22c55e;
+        flex-shrink: 0;
+        animation: blink 1.4s ease-in-out infinite;
+        margin-right: 6px;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.2;
+        }
+      }
+
+      /* LIVE SECTION */
+      .live-section {
+        background: #fff;
+        border-bottom: 1px solid #e2e4e9;
+        padding: 1rem 2rem;
+      }
+      .live-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0.85rem;
+      }
+      .live-header h2 {
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+      }
+      .live-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 12px;
+        letter-spacing: 0.5px;
+      }
+      .badge-live {
+        background: #dcfce7;
+        color: #15803d;
+      }
+      .badge-loading {
+        background: #fef9c3;
+        color: #a16207;
+      }
+      .badge-error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .coin-cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .coin-card {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        transition: border-color 0.2s;
+      }
+      .coin-card:hover {
+        border-color: #378add;
+        box-shadow: 0px 0px 15px rgba(54, 54, 147, 0.734);
+      }
+      .coin-top {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 6px;
+      }
+      .coin-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .coin-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1a1a2e;
+      }
+      .coin-sym {
+        font-size: 10px;
+        color: #9ca3af;
+      }
+      .coin-price {
+        font-size: 19px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 3px;
+      }
+      .coin-chg {
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .coin-mcap {
+        font-size: 10px;
+        color: #9ca3af;
+        margin-top: 3px;
+      }
+      .spark-wrap {
+        position: relative;
+        height: 36px;
+        margin-top: 8px;
+      }
+
+      /* MAIN */
+      main {
+        padding: 1.25rem 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 1.1rem;
+      }
+      .kpi {
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        padding: 0.9rem 1.1rem;
+      }
+      .kpi-label {
+        font-size: 11px;
+        color: #6b7280;
+        margin-bottom: 5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .kpi-val {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a2e;
+      }
+      .kpi-sub {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-top: 3px;
+      }
+
+      .charts-top {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .charts-bot {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.1rem 1.25rem;
+      }
+      .card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 10px;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 8px;
+        font-size: 11px;
+        color: #6b7280;
+      }
+      .leg-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .leg-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+      .chart-wrap {
+        position: relative;
+        width: 100%;
+      }
+
+      footer {
+        text-align: center;
+        padding: 1.25rem;
+        font-size: 11px;
+        color: #9ca3af;
+      }
+
+      @media (max-width: 900px) {
+        .kpis,
+        .coin-cards {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .charts-top,
+        .charts-bot {
+          grid-template-columns: 1fr;
+        }
+        main,
+        .live-section,
+        header {
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+        .ticker-bar {
+          padding: 0 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Sample Superstore — Sales Dashboard</h1>
+        <p>Kaggle dataset · 10,194 rows · 21 columns · with live market data</p>
+      </div>
+      <div class="filters">
+        <select id="regionFilter">
+          <option value="all">All regions</option>
+          <option value="East">East</option>
+          <option value="West">West</option>
+          <option value="Central">Central</option>
+          <option value="South">South</option>
+        </select>
+        <select id="segmentFilter">
+          <option value="all">All segments</option>
+          <option value="Consumer">Consumer</option>
+          <option value="Corporate">Corporate</option>
+          <option value="Home Office">Home Office</option>
+        </select>
+      </div>
+    </header>
+
+    <!-- LIVE TICKER BANNER -->
+    <div class="ticker-bar">
+      <div class="blink"></div>
+      <span class="ticker-label">Live crypto</span>
+      <div class="ticker-scroll" id="tickerScroll">
+        <span class="tcoin"><span class="tsym">BTC</span> — —</span>
+        <span class="tcoin"><span class="tsym">ETH</span> — —</span>
+        <span class="tcoin"><span class="tsym">SOL</span> — —</span>
+        <span class="tcoin"><span class="tsym">BNB</span> — —</span>
+      </div>
+      <span class="ticker-status" id="tickerStatus">connecting…</span>
+    </div>
+
+    <!-- LIVE COIN CARDS -->
+    <div class="live-section">
+      <div class="live-header">
+        <h2>Live crypto market feed</h2>
+        <span class="live-badge badge-loading" id="liveBadge">LOADING</span>
+        <span
+          style="font-size: 10px; color: #9ca3af; margin-left: auto"
+          id="liveTime"
+        ></span>
+      </div>
+      <div class="coin-cards" id="coinCards">
+        <div
+          style="
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 13px;
+            color: #9ca3af;
+          "
+        >
+          Fetching live prices from CoinGecko free API…
+        </div>
+      </div>
+    </div>
+
+    <!-- SUPERSTORE CHARTS -->
+    <main>
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-label">Total sales</div>
+          <div class="kpi-val" id="kTotalSales">$2.33M</div>
+          <div class="kpi-sub" id="kSalesSub">10,194 rows</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Total profit</div>
+          <div class="kpi-val" id="kTotalProfit">$292K</div>
+          <div class="kpi-sub" id="kProfitSub">12.6% margin</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Total orders</div>
+          <div class="kpi-val" id="kOrders">5,111</div>
+          <div class="kpi-sub">unique order IDs</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Avg order value</div>
+          <div class="kpi-val" id="kAvgOrder">$455</div>
+          <div class="kpi-sub">per order</div>
+        </div>
+      </div>
+
+      <div class="charts-top">
+        <div class="card">
+          <div class="card-title">Monthly sales trend (2026)</div>
+          <div class="chart-wrap" style="height: 210px">
+            <canvas id="lineChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Sales &amp; profit by region</div>
+          <div class="chart-wrap" style="height: 210px">
+            <canvas id="regionChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-bot">
+        <div class="card">
+          <div class="card-title">Revenue share by category</div>
+          <div class="legend" id="catLegend"></div>
+          <div class="chart-wrap" style="height: 185px">
+            <canvas id="pieChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Sales by customer segment</div>
+          <div class="chart-wrap" style="height: 225px">
+            <canvas id="segChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top 6 sub-categories by sales</div>
+          <div class="chart-wrap" style="height: 225px">
+            <canvas id="subCatChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      Sample Superstore · Kaggle · Live prices via CoinGecko free API — polling
+      every 30s · Built with Chart.js
+    </footer>
+
+    <script>
+      /* ── STATIC SUPERSTORE DATA ── */
+      const RAW = {
+        monthly: {
+          labels: [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ],
+          all: [
+            44259, 20301, 60728, 36779, 45155, 53056, 45989, 64130, 88065,
+            83475, 118455, 85175,
+          ],
+          East: [
+            12400, 5800, 18200, 10200, 13100, 15800, 13500, 19200, 26400, 25000,
+            36200, 25500,
+          ],
+          West: [
+            14800, 6900, 20400, 12500, 15200, 17800, 15400, 21500, 29600, 28100,
+            40700, 28600,
+          ],
+          Central: [
+            10200, 4400, 13700, 8100, 9900, 11600, 10000, 14000, 19300, 18300,
+            26500, 18700,
+          ],
+          South: [
+            6860, 3200, 8428, 5979, 6955, 7856, 7089, 9430, 12765, 12075, 15055,
+            12375,
+          ],
+        },
+        region: {
+          labels: ["Central", "East", "South", "West"],
+          sales: [503171, 691828, 391722, 739814],
+          profit: [39865, 94883, 46749, 110799],
+        },
+        category: {
+          all: {
+            labels: ["Furniture", "Office Supplies", "Technology"],
+            sales: [754748, 731893, 839893],
+          },
+          Consumer: {
+            labels: ["Furniture", "Office Supplies", "Technology"],
+            sales: [367800, 358300, 444600],
+          },
+          Corporate: {
+            labels: ["Furniture", "Office Supplies", "Technology"],
+            sales: [231400, 224400, 260000],
+          },
+          "Home Office": {
+            labels: ["Furniture", "Office Supplies", "Technology"],
+            sales: [155548, 149193, 135293],
+          },
+        },
+        segment: {
+          labels: ["Consumer", "Corporate", "Home Office"],
+          all: [1170660, 715806, 440068],
+          East: [350400, 214500, 126928],
+          West: [370000, 226000, 143814],
+          Central: [234800, 143600, 124771],
+          South: [215460, 131706, 44555],
+        },
+        subcat: {
+          labels: [
+            "Chairs",
+            "Phones",
+            "Storage",
+            "Tables",
+            "Binders",
+            "Machines",
+          ],
+          sales: [335768, 331843, 224645, 208020, 207355, 189925],
+        },
+      };
+
+      /* ── COIN CONFIG ── */
+      const COINS = [
+        { id: "bitcoin", sym: "BTC", name: "Bitcoin", color: "#f7931a" },
+        { id: "ethereum", sym: "ETH", name: "Ethereum", color: "#627eea" },
+        { id: "solana", sym: "SOL", name: "Solana", color: "#9945ff" },
+        { id: "binancecoin", sym: "BNB", name: "BNB", color: "#f3ba2f" },
+        
+      ];
+      const history = {};
+      COINS.forEach((c) => (history[c.id] = []));
+      const sparks = {};
+
+      /* ── HELPERS ── */
+      const fmtP = (n) =>
+        n >= 1000
+          ? "$" + n.toLocaleString("en-US", { maximumFractionDigits: 0 })
+          : n >= 1
+            ? "$" + n.toFixed(2)
+            : "$" + n.toFixed(4);
+      const fmtM = (n) =>
+        n >= 1e12
+          ? "$" + (n / 1e12).toFixed(2) + "T"
+          : n >= 1e9
+            ? "$" + (n / 1e9).toFixed(1) + "B"
+            : "$" + (n / 1e6).toFixed(0) + "M";
+
+      /* ── RENDER COIN CARDS ── */
+      function renderCards(data) {
+        const box = document.getElementById("coinCards");
+        box.innerHTML = "";
+        COINS.forEach((coin) => {
+          const d = data[coin.id];
+          if (!d) return;
+          const up = d.usd_24h_change >= 0;
+          history[coin.id].push(d.usd);
+          if (history[coin.id].length > 20) history[coin.id].shift();
+
+          const card = document.createElement("div");
+          card.className = "coin-card";
+          card.innerHTML = `
+      <div class="coin-top">
+        <div class="coin-icon" style="background:${coin.color}">${coin.sym[0]}</div>
+        <div><div class="coin-name">${coin.name}</div><div class="coin-sym">${coin.sym}</div></div>
+      </div>
+      <div class="coin-price">${fmtP(d.usd)}</div>
+      <div class="coin-chg ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${Math.abs(d.usd_24h_change).toFixed(2)}% (24h)</div>
+      <div class="coin-mcap">Mkt cap: ${fmtM(d.usd_market_cap)}</div>
+      <div class="spark-wrap"><canvas id="sp-${coin.id}"></canvas></div>`;
+          box.appendChild(card);
+
+          if (sparks[coin.id]) sparks[coin.id].destroy();
+          sparks[coin.id] = new Chart(
+            document.getElementById("sp-" + coin.id),
+            {
+              type: "line",
+              data: {
+                labels: history[coin.id].map((_, i) => i),
+                datasets: [
+                  {
+                    data: history[coin.id],
+                    borderColor: up ? "#16a34a" : "#dc2626",
+                    borderWidth: 1.5,
+                    pointRadius: 0,
+                    tension: 0.4,
+                    fill: false,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { enabled: false },
+                },
+                scales: { x: { display: false }, y: { display: false } },
+              },
+            },
+          );
+        });
+      }
+
+      /* ── RENDER TICKER ── */
+      function renderTicker(data) {
+        let html = "";
+        COINS.forEach((c) => {
+          const d = data[c.id];
+          if (!d) return;
+          const up = d.usd_24h_change >= 0;
+          html += `<span class="tcoin"><span class="tsym">${c.sym}</span> ${fmtP(d.usd)} <span class="${up ? "up" : "down"}">${up ? "+" : "-"}${Math.abs(d.usd_24h_change).toFixed(2)}%</span></span>`;
+        });
+        document.getElementById("tickerScroll").innerHTML =
+          html + html; /* duplicate for seamless loop */
+      }
+
+      /* ── POLLING ── */
+      const CG_URL =
+        "https://api.coingecko.com/api/v3/simple/price?ids=" +
+        COINS.map((c) => c.id).join(",") +
+        "&vs_currencies=usd&include_24hr_change=true&include_market_cap=true";
+
+      async function poll() {
+        try {
+          const r = await fetch(CG_URL);
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          const data = await r.json();
+          renderCards(data);
+          renderTicker(data);
+          const t = new Date().toLocaleTimeString();
+          document.getElementById("liveBadge").textContent = "LIVE";
+          document.getElementById("liveBadge").className =
+            "live-badge badge-live";
+          document.getElementById("tickerStatus").textContent = "updated " + t;
+          document.getElementById("liveTime").textContent =
+            "Last updated: " + t + " · refreshes every 30s";
+        } catch (e) {
+          document.getElementById("liveBadge").textContent = "ERROR";
+          document.getElementById("liveBadge").className =
+            "live-badge badge-error";
+          document.getElementById("tickerStatus").textContent = "retrying…";
+        }
+      }
+      poll();
+      setInterval(poll, 30000);
+
+      /* ── SUPERSTORE CHARTS ── */
+      const C = {
+        blue: "#378ADD",
+        teal: "#1D9E75",
+        coral: "#D85A30",
+        purple: "#7F77DD",
+        amber: "#BA7517",
+        blueDim: "rgba(55,138,221,0.65)",
+        tealDim: "rgba(29,158,117,0.65)",
+      };
+      const TC = () => "#6b7280",
+        GC = () => "rgba(0,0,0,0.06)";
+      const sY = () => ({
+        ticks: {
+          color: TC(),
+          font: { size: 11 },
+          callback: (v) => "$" + (v >= 1000 ? (v / 1000).toFixed(0) + "K" : v),
+        },
+        grid: { color: GC() },
+      });
+      const sX = () => ({
+        ticks: { color: TC(), font: { size: 11 } },
+        grid: { color: GC() },
+      });
+
+      let ss = {};
+      const kill = (k) => {
+        if (ss[k]) {
+          ss[k].destroy();
+          delete ss[k];
+        }
+      };
+
+      function buildLine(r) {
+        kill("line");
+        const d = RAW.monthly[r] || RAW.monthly.all;
+        ss.line = new Chart(document.getElementById("lineChart"), {
+          type: "line",
+          data: {
+            labels: RAW.monthly.labels,
+            datasets: [
+              {
+                label: "Sales",
+                data: d,
+                borderColor: C.blue,
+                backgroundColor: "rgba(55,138,221,0.07)",
+                tension: 0.35,
+                fill: true,
+                pointRadius: 3,
+                pointBackgroundColor: C.blue,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: sX(), y: sY() },
+          },
+        });
+      }
+      function buildRegion() {
+        kill("region");
+        ss.region = new Chart(document.getElementById("regionChart"), {
+          type: "bar",
+          data: {
+            labels: RAW.region.labels,
+            datasets: [
+              {
+                label: "Sales",
+                data: RAW.region.sales,
+                backgroundColor: C.blueDim,
+                borderColor: C.blue,
+                borderWidth: 1.2,
+                borderRadius: 3,
+              },
+              {
+                label: "Profit",
+                data: RAW.region.profit,
+                backgroundColor: C.tealDim,
+                borderColor: C.teal,
+                borderWidth: 1.2,
+                borderRadius: 3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: TC(), font: { size: 11 }, boxWidth: 10 },
+              },
+            },
+            scales: { x: sX(), y: sY() },
+          },
+        });
+      }
+      function buildPie(seg) {
+        kill("pie");
+        const src = RAW.category[seg] || RAW.category.all;
+        const tot = src.sales.reduce((a, b) => a + b, 0);
+        const cols = [C.blue, C.teal, C.coral];
+        document.getElementById("catLegend").innerHTML = src.labels
+          .map(
+            (l, i) =>
+              `<span class="leg-item"><span class="leg-dot" style="background:${cols[i]}"></span>${l} ${((src.sales[i] / tot) * 100).toFixed(1)}%</span>`,
+          )
+          .join("");
+        ss.pie = new Chart(document.getElementById("pieChart"), {
+          type: "pie",
+          data: {
+            labels: src.labels,
+            datasets: [
+              {
+                data: src.sales,
+                backgroundColor: cols,
+                borderColor: "rgba(255,255,255,0.6)",
+                borderWidth: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+          },
+        });
+      }
+      function buildSeg(r) {
+        kill("seg");
+        const d = RAW.segment[r] || RAW.segment.all;
+        ss.seg = new Chart(document.getElementById("segChart"), {
+          type: "bar",
+          data: {
+            labels: RAW.segment.labels,
+            datasets: [
+              {
+                label: "Sales",
+                data: d,
+                backgroundColor: [C.blueDim, C.tealDim, "rgba(186,117,23,0.6)"],
+                borderColor: [C.blue, C.teal, C.amber],
+                borderWidth: 1.2,
+                borderRadius: 3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: sX(), y: sY() },
+          },
+        });
+      }
+      function buildSubCat() {
+        kill("sub");
+        ss.sub = new Chart(document.getElementById("subCatChart"), {
+          type: "bar",
+          data: {
+            labels: RAW.subcat.labels,
+            datasets: [
+              {
+                label: "Sales",
+                data: RAW.subcat.sales,
+                backgroundColor: "rgba(127,119,221,0.65)",
+                borderColor: C.purple,
+                borderWidth: 1.2,
+                borderRadius: 3,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                ticks: {
+                  color: TC(),
+                  font: { size: 11 },
+                  callback: (v) => "$" + (v / 1000).toFixed(0) + "K",
+                },
+                grid: { color: GC() },
+              },
+              y: {
+                ticks: { color: TC(), font: { size: 11 } },
+                grid: { display: false },
+              },
+            },
+          },
+        });
+      }
+
+      function updateKPIs(r, s) {
+        const rS = {
+          all: 2326534,
+          East: 691828,
+          West: 739814,
+          Central: 503171,
+          South: 391722,
+        };
+        const rP = {
+          all: 292297,
+          East: 94883,
+          West: 110799,
+          Central: 39865,
+          South: 46749,
+        };
+        const rO = {
+          all: 5111,
+          East: 1521,
+          West: 1517,
+          Central: 1118,
+          South: 955,
+        };
+        const m =
+          { all: 1, Consumer: 0.503, Corporate: 0.308, "Home Office": 0.189 }[
+            s
+          ] || 1;
+        const sales = Math.round((rS[r] || rS.all) * m),
+          profit = Math.round((rP[r] || rP.all) * m),
+          orders = Math.round((rO[r] || rO.all) * m);
+        const fmt = (n) =>
+          n >= 1e6
+            ? "$" + (n / 1e6).toFixed(2) + "M"
+            : n >= 1e3
+              ? "$" + (n / 1e3).toFixed(0) + "K"
+              : "$" + n.toLocaleString();
+        document.getElementById("kTotalSales").textContent = fmt(sales);
+        document.getElementById("kTotalProfit").textContent = fmt(profit);
+        document.getElementById("kSalesSub").textContent =
+          r === "all" && s === "all" ? "10,194 rows" : "filtered view";
+        document.getElementById("kProfitSub").textContent =
+          ((profit / sales) * 100).toFixed(1) + "% margin";
+        document.getElementById("kOrders").textContent =
+          orders.toLocaleString();
+        document.getElementById("kAvgOrder").textContent =
+          "$" + Math.round(sales / orders).toLocaleString();
+      }
+
+      function render() {
+        const r = document.getElementById("regionFilter").value;
+        const s = document.getElementById("segmentFilter").value;
+        updateKPIs(r, s);
+        buildLine(r);
+        buildRegion();
+        buildPie(s);
+        buildSeg(r);
+        buildSubCat();
+      }
+      render();
+      document
+        .getElementById("regionFilter")
+        .addEventListener("change", render);
+      document
+        .getElementById("segmentFilter")
+        .addEventListener("change", render);
+    </script>
+  </body>
+</html>
